@@ -1,0 +1,77 @@
+## Birthday Problem - Final Script
+
+```{r}
+library(tidyverse)
+```
+
+## Creating the function
+
+```{r}
+birthday_problem<-function(people,iterations=10000,probabilities=rep(1,366)){
+
+matches<-data.frame(rep=1:iterations,match=NA)
+
+for(i in 1:iterations){
+
+birthdays<-sample(1:366,people,replace=TRUE,prob=probabilities)
+
+matches$match[i]<-birthdays %>%
+  duplicated() %>%
+   max() 
+}
+
+matches %>%
+  summarise(proportion_matched=mean(match),se=sd(match)/sqrt(iterations),people=people,iterations=iterations) %>%
+  return()
+
+}
+
+```
+
+
+## Reading in the ONS data and modifying the ratio of each birthday to account for leap years
+```{r}
+uk_births<-read.csv(url("https://www.ons.gov.uk/visualisations/nesscontent/dvc307/line_chart/data.csv")) %>%
+  mutate(ratio=ifelse(date=="29-Feb",average/4,average))
+```
+
+# Picking out some examples of using the function
+
+```{r}
+birthday_problem(10,probabilities=uk_births$ratio)
+
+birthday_problem(10)
+```
+
+## Using map_df to loop across 1-100 size parties each 1000 times using equal birthday distribution
+
+```{r}
+equal_birthdays<-1:100 %>%
+map_df(birthday_problem,iterations=1000)
+```
+
+
+## Using map_df to loop across 1-100 size parties each 1000 times using realistic birthday distribution
+
+```{r}
+real_birthdays<-1:100 %>%
+map_df(birthday_problem,iterations=1000,probabilities=uk_births$ratio)
+```
+
+## Putting it into a nice plot
+
+```{r}
+ggplot(equal_birthdays,aes(y=proportion_matched,x=people))+
+  geom_line(col="red")+
+  geom_line(col="blue",data=real_birthdays)
+```
+
+
+
+
+
+```{r}
+sample(1:366,23,replace=TRUE,prob=uk_births$ratio)
+```
+
+
